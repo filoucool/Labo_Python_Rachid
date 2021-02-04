@@ -6,11 +6,7 @@
 </P>
 
 <H1> Comprendre le fonctionnement du Robot </H1>
-<ul>
-  <li> Félix Chenette-Stewart, Rachid Benali ou Mauricio Gomez sur le Omnivox Gérald-Godin</li>
-  <li> Ouvrir un <a href="https://docs.github.com/en/github/managing-your-work-on-github/creating-an-issue"><span>issue</span></a></li>
-  <li> Aller au bureau des professeurs</li>
- </ul>
+<P> A VENIR <p>
   <H1> Requirements: </H1>
 <ul>
   <li> RPi.GPIO</li>
