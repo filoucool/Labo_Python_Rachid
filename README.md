@@ -31,7 +31,13 @@
   <li> www.youtube.com/ </li>
   <li> etc. </li>
  </ul>
- 
+  <H1> Documentation importante: </H1>
+<ul>
+  <li> https://emanual.robotis.com/docs/en/dxl/ax/ax-12a/</li>
+  <li> https://www.raspberrypi.org/documentation/usage/gpio/README.md</li>
+  <li> www.youtube.com/ </li>
+  <li> etc. </li>
+ </ul>
  
 <H1> Comment Télécharger les codes? </H1>
 <ul>
