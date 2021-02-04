@@ -15,10 +15,11 @@
 <ul>
   <li> RPi.GPIO</li>
   <li> etc. </li>
-  <li> requirements.txt <br>
+  <li> requirements.txt </li>
+ 
   ```
     >pip install -r requirements.txt 
-  ```</li>
+  ```
  
 <H1> Contributeurs: </H1>
 <ul>
