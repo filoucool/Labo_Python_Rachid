@@ -1,5 +1,3 @@
-<H1> Laboratoires en python utilisés avec votre petit robot. </H1>
-
 <H1> Comprendre le fonctionnement du Robot </H1>
 <P> A VENIR <p>
   <H1> Requirements: </H1>
