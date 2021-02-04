@@ -1,10 +1,5 @@
 <H1> Laboratoires en python utilisés avec votre petit robot. </H1>
 
-<P> Voici une librairie de code pour plusieurs sensors pour Arduino. Cette libraire est 100% gratuite et ouverte à tous. <BR>
- 
-
-</P>
-
 <H1> Comprendre le fonctionnement du Robot </H1>
 <P> A VENIR <p>
   <H1> Requirements: </H1>
