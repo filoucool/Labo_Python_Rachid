@@ -4,9 +4,7 @@ from pyax12.argparse_default import common_argument_parser
 import time
 
 """
-Dans ce lab, vous allez comprendre la base du fonctionnement des moteur AX-12.
-Ce code initialise les moteurs au premier step (0/300) et va ensuite tourner pendant 5 secondes.
-
+Dans ce lab, vous allez apprendre comment
 """
 
 def main():
