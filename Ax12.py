@@ -4,12 +4,12 @@
     +----+----+--+------+-----------+----------+---+-----------+---------+
 """
 
-from serial import Serial
-from serial import SerialException
 import sys
 import time
 import math
 import argparse
+from serial import Serial
+from serial import SerialException
 
 try:
     import RPi.GPIO as gpio
@@ -286,34 +286,20 @@ Packet
 
 
 def initiate(self, id, data):
-
-       # Check the data bytes.
-       # "TypeError" and "ValueError" are raised by the "bytes" constructor if
-       # necessary.
     if isinstance(data, int):
-        data = bytes((data, ))  # convert integers to a sequence
+        data = bytes((data, ))
     else:
         data = bytes(data)
 
-    # Add the header bytes.
     self._bytes = bytearray((0xff, 0xff))
-
-    # Check and add the Dynamixel ID byte.
-    # "TypeError" and "ValueError" are raised by the "bytearray.append()"
-    # if necessary.
     if 0x00 <= id <= 0xfe:
         self._bytes.append(id)
     else:
         msg = "Wrong id: {:#x} (should be in range(0x00, 0xfe))."
         raise ValueError(msg.format(id))
 
-    # Add the length byte.
     self._bytes.append(len(data) + 1)
-
-    # Add the data bytes.
     self._bytes.extend(data)
-
-    # Add the checksum byte.
     computed_checksum = compute_checksum(self._bytes[2:])
     self._bytes.append(computed_checksum)
 
@@ -321,32 +307,21 @@ def initiate(self, id, data):
 @property
 def header(self):
     return self._bytes[0:2]
-
-
 @property
 def id(self):
     return self._bytes[2]
-
-
 @property
 def length(self):
     return self._bytes[3]
-
-
 @property
 def parameters(self):
     return self._bytes[5:-1]
-
-
 @property
 def data(self):
     return self._bytes[4:-1]
-
-
 @property
 def checksum(self):
     return self._bytes[-1]
-
 
 """
 Packets
@@ -503,12 +478,10 @@ class StatusPacket(Packet):
         if self.length != len(self._bytes) - 4:
             raise ValueError('Wrong length byte.')
 
-        # Verify the checksum.
         computed_checksum = compute_checksum(self._bytes[2:-1])
         if computed_checksum != self.checksum:
             raise StatusChecksumError('Wrong checksum.')
 
-        # Check error bit flags.
         if self.instruction_error:
             raise InstructionError()
 
@@ -530,12 +503,10 @@ class StatusPacket(Packet):
         if self.input_voltage_error:
             raise InputVoltageError()
 
-        # Check the ID byte
         if not(0x00 <= self.id <= 0xfd):
             msg = "Wrong id, a value in range (0, 0xFD) is required."
             raise ValueError(msg)
 
-    # READ ONLY PROPERTIES
 
     @property
     def error(self):
