@@ -1,19 +1,21 @@
 import Ax12
+from serial import Serial
+from serial import SerialException
+import sys
 import time
+import math
+import argparse
 
 def main():
 
     # Parse options
-    parser = (desc=main.__doc__)
-    args = parser.parse_args()
+    
 
     # Connect to the serial port
-    serial_connection = Connection(port=args.port,
-                                   baudrate=args.baudrate,
-                                   timeout=args.timeout,
-                                   rpi_gpio=args.rpi)
+    serial_connection =(port="/dev/ttyS0",baudrate=1000000,timeout=0.1,
+             waiting_time=0.02,rpi_gpio=True)
 
-    dynamixel_id = args.dynamixel_id
+    dynamixel_id = 18
 
     # Set the "wheel mode"
     serial_connection.set_cw_angle_limit(dynamixel_id, 0, degrees=False)
