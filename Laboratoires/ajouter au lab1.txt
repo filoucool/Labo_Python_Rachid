@@ -1,0 +1,13 @@
+ajouter 5 manipulations:
+
+manip 1: faire un code pour mettre les DEUX moteurs en mode stepper
+
+manip 2: faire un code pour mettre les deux moteurs en mode moteur (wheel mode)
+
+manip 3: faire un code pour faire...
+	avancer le robot
+	faire reculler le robot
+	faire tourner le robot sur lui meme
+	faire tourner les roue a 3 angles et les faire revenir a 0 degrees
+
+manip 4: explication du code
