@@ -12,12 +12,12 @@ def main():
     args = parser.parse_args()
     # Connect to the serial port
     serial_connection = Connection(port='/dev/ttyS0',
-                                   baudrate=1000000,
-                                   timeout=0.01,
+                                   baudrate=115200,
+                                   timeout=0.1,
                                    rpi_gpio=18)
 
-    dynamixel_id1 = 0x12
-    dynamixel_id2 = 0x11
+    dynamixel_id1 = 0x11
+    dynamixel_id2 = 0x12
     #args.dynamixel_id = all motors
     # Set the "wheel mode"
     serial_connection.set_cw_angle_limit(dynamixel_id1, 0, degrees=False)
@@ -35,7 +35,7 @@ def main():
     # Leave the "wheel mode"
     serial_connection.set_ccw_angle_limit(dynamixel_id1, 1023, degrees=False)
     serial_connection.set_ccw_angle_limit(dynamixel_id2, 2047, degrees=False)
-    
+    gpio.cleanup()
     # Close the serial connection
     serial_connection.close()
 

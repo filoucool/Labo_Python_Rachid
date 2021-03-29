@@ -32,7 +32,7 @@ controller after receiving an instruction packet).
 
 __all__ = ['StatusPacket']
 
-import pyax12.packet as pk
+import packet as pk
 
 # EXCEPTION CLASSES ###########################################################
 

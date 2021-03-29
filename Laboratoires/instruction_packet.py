@@ -32,8 +32,8 @@ commands).
 
 __all__ = ['InstructionPacket']
 
-import pyax12.packet as pk
-from pyax12 import utils
+import packet as pk
+import utils
 
 # THE INSTRUCTION SET
 # (see the official Dynamixel AX-12 User's manual p.19)

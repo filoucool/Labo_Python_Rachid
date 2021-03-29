@@ -32,7 +32,7 @@ __all__ = ['common_argument_parser']
 
 import argparse
 
-import pyax12.packet as pk
+import packet as pk
 
 
 ID_HELP_STR = ("The unique ID of a Dynamixel unit to work with "

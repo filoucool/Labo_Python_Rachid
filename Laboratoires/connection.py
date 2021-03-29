@@ -34,16 +34,16 @@ import serial
 import sys
 import time
 
-import pyax12.packet as pk
-import pyax12.status_packet as sp
-import pyax12.instruction_packet as ip
+import packet as pk
+import status_packet as sp
+import instruction_packet as ip
 
 try:
     import RPi.GPIO as gpio
 except:
     pass
 
-from pyax12 import utils
+import utils
 
 class Connection(object):
     """Create a serial connection with dynamixel actuators.
@@ -56,8 +56,8 @@ class Connection(object):
         the instruction packet and the receiving the status packet.
     """
 
-    def __init__(self, port='/dev/ttyUSB0', baudrate=57600, timeout=0.1,
-                 waiting_time=0.02, rpi_gpio=False):
+    def __init__(self, port='/dev/ttyUSB0', baudrate=1000000, timeout=0.1,
+                 waiting_time=2, rpi_gpio=False):
 
         self.rpi_gpio = False
 
@@ -67,7 +67,7 @@ class Connection(object):
             else:
                 raise Exception("RPi.GPIO cannot be imported")   # TODO: improve this ?
 
-        self.waiting_time = waiting_time
+        self.waiting_time = 1
 
         self.port = port
         self.baudrate = baudrate
@@ -106,7 +106,7 @@ class Connection(object):
         if self.rpi_gpio:
             # Pin 18 = +3V (DATA status = send data to Dynamixel)
             gpio.output(18, gpio.HIGH)
-            time.sleep(0.01)          # TODO
+            time.sleep(0.001)          # TODO
 
         self.serial_connection.write(instruction_packet_bytes)
 
@@ -114,7 +114,7 @@ class Connection(object):
 
         if self.rpi_gpio:
             self.serial_connection.flushOutput()
-            time.sleep(0.00017 * len(instruction_packet_bytes))  # TODO: check instead if the output buffer is empty or make the previous flushOutput synchronous
+            time.sleep(0.000035 * len(instruction_packet_bytes))  # TODO: check instead if the output buffer is empty or make the previous flushOutput synchronous
 
             if self.rpi_gpio:
                 # Pin 18 = 0V (DATA status = receive data from Dynamixel)
@@ -130,17 +130,7 @@ class Connection(object):
         # If you use the USB2Dynamixel device, make sure its switch is set on
         # "TTL" (otherwise status packets won't be readable).
 
-        num_bytes_available = self.serial_connection.inWaiting()
-
-        # TODO: not robust...
-        status_packet_bytes = self.serial_connection.read(num_bytes_available)
-
-        # TODO: make the reading status more robust?
-        status_packet = None
-        if len(status_packet_bytes) > 0:
-            status_packet = sp.StatusPacket(status_packet_bytes)
-
-        return status_packet
+       
 
 
     def close(self):
@@ -267,208 +257,6 @@ class Connection(object):
         return byte_seq
 
 
-    def print_control_table(self, dynamixel_id):
-        """Print the *control table* of the specified Dynamixel unit in an
-        "raw" format.
-
-        To get the same output in a more easily human readable format, use the
-        `pretty_print_control_table` function.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-
-        byte_seq = self.dump_control_table(dynamixel_id)
-        control_table_str = utils.pretty_hex_str(byte_seq, ' ')
-
-        print(control_table_str)
-
-
-    def get_control_table_tuple(self, dynamixel_id):
-        """Return the *control table* of the specified Dynamixel unit in an
-        easily human readable tuple.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-
-        dxl_id = dynamixel_id   # use a shorter alias...
-
-        ####
-
-        def angle_to_str(dxl_angle):
-            angle_degrees = utils.dxl_angle_to_degrees(dxl_angle)
-            angle_str = "{}° ({})".format(angle_degrees, dxl_angle)
-            return angle_str
-
-        def abs_angle_to_str(dxl_angle):
-            angle_degrees = round(dxl_angle / 1023. * 300., 1)
-            angle_str = "{}° ({})".format(angle_degrees, dxl_angle)
-            return angle_str
-
-        ####
-
-        model_number = self.get_model_number(dxl_id)
-        if model_number == 12:
-            model_number_str = "AX-12+"
-        elif model_number == 13:
-            model_number_str = "AX-S1"
-        else:
-            model_number_str = "Unknown (%i)" % model_number
-
-        baud_rate_str = "%s bps" % self.get_baud_rate(dxl_id)
-        return_delay_time_str = "%s µs" % self.get_return_delay_time(dxl_id)
-
-        cw_angle_limit_str = angle_to_str(self.get_cw_angle_limit(dxl_id))
-        ccw_angle_limit_str = angle_to_str(self.get_ccw_angle_limit(dxl_id))
-
-        max_temperature_str = "%s°C" % self.get_max_temperature(dxl_id)
-        min_voltage_str = "%sV" % self.get_min_voltage(dxl_id)
-        max_voltage_str = "%sV" % self.get_max_voltage(dxl_id)
-
-        max_torque = self.get_max_torque(dxl_id)
-        if max_torque == 0:
-            max_torque_str = "0 (free run mode)"
-        else:
-            max_torque_str = max_torque
-
-        status_return_level = self.get_status_return_level(dxl_id)
-        if status_return_level == 0:
-            status_return_level_str = "0 (do not respond to any instructions)"
-        elif status_return_level == 1:
-            status_return_level_str = ("1 (respond only to READ_DATA"
-                                       " instructions)")
-        elif status_return_level == 2:
-            status_return_level_str = "2 (respond to all instructions)"
-        else:
-            status_return_level_str = "%i (unknown)" % status_return_level
-
-        voltage_alarm_led = self.has_input_voltage_alarm_led(dxl_id)
-        angle_limit_alarm_led = self.has_angle_limit_alarm_led(dxl_id)
-        overheating_alarm_led = self.has_overheating_alarm_led(dxl_id)
-        range_alarm_led = self.has_range_alarm_led(dxl_id)
-        checksum_alarm_led = self.has_checksum_alarm_led(dxl_id)
-        overload_alarm_led = self.has_overload_alarm_led(dxl_id)
-        instruction_alarm_led = self.has_instruction_alarm_led(dxl_id)
-
-        voltage_alarm_led_str = "on" if voltage_alarm_led else "off"
-        angle_limit_alarm_led_str = "on" if angle_limit_alarm_led else "off"
-        overheating_alarm_led_str = "on" if overheating_alarm_led else "off"
-        range_alarm_led_str = "on" if range_alarm_led else "off"
-        checksum_alarm_led_str = "on" if checksum_alarm_led else "off"
-        overload_alarm_led_str = "on" if overload_alarm_led else "off"
-        instruction_alarm_led_str = "on" if instruction_alarm_led else "off"
-
-        voltage_alarm_off = self.has_input_voltage_alarm_shutdown(dxl_id)
-        angle_limit_alarm_off = self.has_angle_limit_alarm_shutdown(dxl_id)
-        overheating_alarm_off = self.has_overheating_alarm_shutdown(dxl_id)
-        range_alarm_off = self.has_range_alarm_shutdown(dxl_id)
-        checksum_alarm_off = self.has_checksum_alarm_shutdown(dxl_id)
-        overload_alarm_off = self.has_overload_alarm_shutdown(dxl_id)
-        instruction_alarm_off = self.has_instruction_alarm_shutdown(dxl_id)
-
-        voltage_alarm_off_str = "on" if voltage_alarm_off else "off"
-        angle_limit_alarm_off_str = "on" if angle_limit_alarm_off else "off"
-        overheating_alarm_off_str = "on" if overheating_alarm_off else "off"
-        range_alarm_off_str = "on" if range_alarm_off else "off"
-        checksum_alarm_off_str = "on" if checksum_alarm_off else "off"
-        overload_alarm_off_str = "on" if overload_alarm_off else "off"
-        instruction_alarm_off_str = "on" if instruction_alarm_off else "off"
-
-        torque_enable_str = "yes" if self.is_torque_enable(dxl_id) else "no"
-        led_str = "on" if self.is_led_enabled(dxl_id) else "off"
-
-        cw_compliance_margin = self.get_cw_compliance_margin(dxl_id)
-        ccw_compliance_margin = self.get_ccw_compliance_margin(dxl_id)
-        cw_compliance_slope = self.get_cw_compliance_slope(dxl_id)
-        ccw_compliance_slope = self.get_ccw_compliance_slope(dxl_id)
-
-        cw_compliance_margin_str = abs_angle_to_str(cw_compliance_margin)
-        ccw_compliance_margin_str = abs_angle_to_str(ccw_compliance_margin)
-        cw_compliance_slope_str = abs_angle_to_str(cw_compliance_slope)
-        ccw_compliance_slope_str = abs_angle_to_str(ccw_compliance_slope)
-
-        goal_position_str = angle_to_str(self.get_goal_position(dxl_id))
-        position_str = angle_to_str(self.get_present_position(dxl_id))
-
-        voltage_str = "%sV" % self.get_present_voltage(dxl_id)
-        temperature_str = "%s°C" % self.get_present_temperature(dxl_id)
-
-        if self.has_registred_instruction(dxl_id):
-            registred_inst_str = "yes"
-        else:
-            registred_inst_str = "no"
-
-        moving_str = "yes" if self.is_moving(dxl_id) else "no"
-        locked_str = "yes" if self.is_locked(dxl_id) else "no"
-
-        ####
-
-        ctrl_table_tuple = (
-            ("model_number", model_number_str),
-            ("firmware_version", self.get_firmware_version(dxl_id)),
-            #("id", self.get_id(dxl_id)), # TODO: stupide...
-            ("id", dxl_id),
-            ("baud_rate", baud_rate_str),
-            ("return_delay_time", return_delay_time_str),
-            ("cw_angle_limit", cw_angle_limit_str),
-            ("ccw_angle_limit", ccw_angle_limit_str),
-            ("max_temperature", max_temperature_str),
-            ("min_voltage", min_voltage_str),
-            ("max_voltage", max_voltage_str),
-            ("max_torque", max_torque_str),
-            ("status_return_level", status_return_level_str),
-            ("input_voltage_alarm_led", voltage_alarm_led_str),
-            ("angle_limit_alarm_led", angle_limit_alarm_led_str),
-            ("overheating_alarm_led", overheating_alarm_led_str),
-            ("range_alarm_led", range_alarm_led_str),
-            ("checksum_alarm_led", checksum_alarm_led_str),
-            ("overload_alarm_led", overload_alarm_led_str),
-            ("instruction_alarm_led", instruction_alarm_led_str),
-            ("input_voltage_alarm_shutdown", voltage_alarm_off_str),
-            ("angle_limit_alarm_shutdown", angle_limit_alarm_off_str),
-            ("overheating_alarm_shutdown", overheating_alarm_off_str),
-            ("range_alarm_shutdown", range_alarm_off_str),
-            ("checksum_alarm_shutdown", checksum_alarm_off_str),
-            ("overload_alarm_shutdown", overload_alarm_off_str),
-            ("instruction_alarm_shutdown", instruction_alarm_off_str),
-            ("down_calibration", self.get_down_calibration(dxl_id)),
-            ("up_calibration", self.get_up_calibration(dxl_id)),
-            ("torque_enabled", torque_enable_str),
-            ("led", led_str),
-            ("cw_compliance_margin", cw_compliance_margin_str),
-            ("ccw_compliance_margin", ccw_compliance_margin_str),
-            ("cw_compliance_slope", cw_compliance_slope_str),
-            ("ccw_compliance_slope", ccw_compliance_slope_str),
-            ("goal_position", goal_position_str),
-            ("moving_speed", self.get_moving_speed(dxl_id)),
-            ("torque_limit", self.get_torque_limit(dxl_id)),
-            ("present_position", position_str),
-            ("present_speed", self.get_present_speed(dxl_id)),
-            ("present_load", self.get_present_load(dxl_id)),
-            ("present_voltage", voltage_str),
-            ("present_temperature", temperature_str),
-            ("registred_instruction", registred_inst_str),
-            ("moving", moving_str),
-            ("locked", locked_str),
-            ("punch", self.get_punch(dxl_id)),
-        )
-
-        return ctrl_table_tuple
-
-
-    def pretty_print_control_table(self, dynamixel_id):
-        """Print the *control table* of the specified Dynamixel unit in an
-        easily human readable format.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-
-        ctrl_table_tuple = self.get_control_table_tuple(dynamixel_id)
-
-        for key, value in ctrl_table_tuple:
-            print("{:.<29} {}".format(key, value))
 
 
     def scan(self, dynamixel_id_bytes=None):
@@ -493,40 +281,6 @@ class Connection(object):
         return available_ids
 
 
-    # HIGH LEVEL ACCESSORS ####################################################
-
-
-    def get_model_number(self, dynamixel_id):
-        """Return the model number of the specified Dynamixel unit.
-
-        For AX-12, this value should be 12 (0x000C).
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.MODEL_NUMBER, 2)
-        return utils.little_endian_bytes_to_int(byte_seq)
-
-
-    def get_firmware_version(self, dynamixel_id):
-        """Return the firmware version of the specified Dynamixel unit.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.VERSION_OF_FIRMWARE, 1)
-        return byte_seq[0]
-
-
-#    # TODO: stupide...
-#    def get_id(self, dynamixel_id):
-#        """Return the ID of the specified Dynamixel unit.
-#
-#        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-#            in range (0, 0xFD).
-#        """
-#        byte_seq = self.read_data(dynamixel_id, pk.ID, 1)
-#        return byte_seq[0]
 
 
     # TODO: add the data value table (cf. p. 13)
@@ -591,78 +345,7 @@ class Connection(object):
         byte_seq = self.read_data(dynamixel_id, pk.CCW_ANGLE_LIMIT, 2)
         return utils.little_endian_bytes_to_int(byte_seq)
 
-
-    def get_max_temperature(self, dynamixel_id):
-        """Return the maximum tolerated internal temperature for the specified
-        Dynamixel unit.
-
-        If the internal temperature of the Dynamixel actuator gets higher than
-        this value, the *Over Heating Error Bit* (the third error bit of
-        Status Packets) will be set to ``1``.
-        The values are in degrees Celsius.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.HIGHEST_LIMIT_TEMPERATURE, 1)
-        return byte_seq[0]
-
-
-    def get_min_voltage(self, dynamixel_id):
-        """Return the minimum tolerated operating voltage for the specified
-        Dynamixel unit.
-
-        If the present voltage of the Dynamixel actuator gets lower than
-        this value, the *Voltage Range Error Bit* (the first error bit of
-        Status Packets) will be set to ``1``.
-        The values are in Volts.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.LOWEST_LIMIT_VOLTAGE, 1)
-        raw_value = byte_seq[0]
-
-        min_voltage = raw_value / 10.
-        return min_voltage
-
-
-    def get_max_voltage(self, dynamixel_id):
-        """Return the maximum tolerated operating voltage for the specified
-        Dynamixel unit.
-
-        If the present voltage of the Dynamixel actuator gets higher than
-        this value, the *Voltage Range Error Bit* (the first error bit of
-        Status Packets) will be set to ``1``.
-        The values are in Volts.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.HIGHEST_LIMIT_VOLTAGE, 1)
-        raw_value = byte_seq[0]
-
-        max_voltage = raw_value / 10.
-        return max_voltage
-
-
-    def get_max_torque(self, dynamixel_id):
-        """Return the initial maximum torque output of the specified Dynamixel
-        unit.
-
-        This value, written in EEPROM, is copied to the *torque limit* bytes
-        (in RAM) when the power is turned ON. Thus, *max torque* is just an
-        initialization value for the actual *torque limit*.
-
-        If this value is equal to ``0``, the Dynamixel unit is configured in
-        *free run mode*.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.MAX_TORQUE, 2)
-        return utils.little_endian_bytes_to_int(byte_seq)
-
+ 
 
     def get_status_return_level(self, dynamixel_id):
         """Say whether the specified Dynamixel unit is configured to return a
@@ -685,57 +368,7 @@ class Connection(object):
         return byte_seq[0]
 
 
-    def has_input_voltage_alarm_led(self, dynamixel_id):
-        """Return ``True`` if the LED of the specified Dynamixel unit is
-        configured to blink when an *Input Voltage Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_LED, 1)
-        alarm_led_byte = byte_seq[0]
-
-        return bool(alarm_led_byte & (1 << 0))
-
-
-    def has_angle_limit_alarm_led(self, dynamixel_id):
-        """Return ``True`` if the LED of the specified Dynamixel unit is
-        configured to blink when an *Angle Limit Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_LED, 1)
-        alarm_led_byte = byte_seq[0]
-
-        return bool(alarm_led_byte & (1 << 1))
-
-
-    def has_overheating_alarm_led(self, dynamixel_id):
-        """Return ``True`` if the LED of the specified Dynamixel unit is
-        configured to blink when an *Overheating Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_LED, 1)
-        alarm_led_byte = byte_seq[0]
-
-        return bool(alarm_led_byte & (1 << 2))
-
-
-    def has_range_alarm_led(self, dynamixel_id):
-        """Return ``True`` if the LED of the specified Dynamixel unit is
-        configured to blink when an *Range Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_LED, 1)
-        alarm_led_byte = byte_seq[0]
-
-        return bool(alarm_led_byte & (1 << 3))
-
+  
 
     def has_checksum_alarm_led(self, dynamixel_id):
         """Return ``True`` if the LED of the specified Dynamixel unit is
@@ -750,82 +383,7 @@ class Connection(object):
         return bool(alarm_led_byte & (1 << 4))
 
 
-    def has_overload_alarm_led(self, dynamixel_id):
-        """Return ``True`` if the LED of the specified Dynamixel unit is
-        configured to blink when an *Overload Error* occurs.
 
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_LED, 1)
-        alarm_led_byte = byte_seq[0]
-
-        return bool(alarm_led_byte & (1 << 5))
-
-
-    def has_instruction_alarm_led(self, dynamixel_id):
-        """Return ``True`` if the LED of the specified Dynamixel unit is
-        configured to blink when an *Instruction Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_LED, 1)
-        alarm_led_byte = byte_seq[0]
-
-        return bool(alarm_led_byte & (1 << 6))
-
-
-    def has_input_voltage_alarm_shutdown(self, dynamixel_id):
-        """Return ``True`` if the specified Dynamixel unit is configured to
-        turn off its torque when an *Input Voltage Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_SHUTDOWN, 1)
-        alarm_shutdown_byte = byte_seq[0]
-
-        return bool(alarm_shutdown_byte & (1 << 0))
-
-
-    def has_angle_limit_alarm_shutdown(self, dynamixel_id):
-        """Return ``True`` if the specified Dynamixel unit is configured to
-        turn off its torque when an *Angle Limit Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_SHUTDOWN, 1)
-        alarm_shutdown_byte = byte_seq[0]
-
-        return bool(alarm_shutdown_byte & (1 << 1))
-
-
-    def has_overheating_alarm_shutdown(self, dynamixel_id):
-        """Return ``True`` if the specified Dynamixel unit is configured to
-        turn off its torque when an *Overheating Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_SHUTDOWN, 1)
-        alarm_shutdown_byte = byte_seq[0]
-
-        return bool(alarm_shutdown_byte & (1 << 2))
-
-
-    def has_range_alarm_shutdown(self, dynamixel_id):
-        """Return ``True`` if the specified Dynamixel unit is configured to
-        turn off its torque when an *Range Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_SHUTDOWN, 1)
-        alarm_shutdown_byte = byte_seq[0]
-
-        return bool(alarm_shutdown_byte & (1 << 3))
 
 
     def has_checksum_alarm_shutdown(self, dynamixel_id):
@@ -841,19 +399,6 @@ class Connection(object):
         return bool(alarm_shutdown_byte & (1 << 4))
 
 
-    def has_overload_alarm_shutdown(self, dynamixel_id):
-        """Return ``True`` if the specified Dynamixel unit is configured to
-        turn off its torque when an *Overload Error* occurs.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.ALARM_SHUTDOWN, 1)
-        alarm_shutdown_byte = byte_seq[0]
-
-        return bool(alarm_shutdown_byte & (1 << 5))
-
-
     def has_instruction_alarm_shutdown(self, dynamixel_id):
         """Return ``True`` if the specified Dynamixel unit is configured to
         turn off its torque when an *Instruction Error* occurs.
@@ -867,53 +412,11 @@ class Connection(object):
         return bool(alarm_shutdown_byte & (1 << 6))
 
 
-    def get_down_calibration(self, dynamixel_id):
-        """Return the "down calibration" value of the specified Dynamixel unit.
-
-        The calibration value is used to compensate the differences between the
-        potentiometers used in the Dynamixel units.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.DOWN_CALIBRATION, 2)
-        return utils.little_endian_bytes_to_int(byte_seq)
 
 
-    def get_up_calibration(self, dynamixel_id):
-        """Return the "up calibration" value of the specified Dynamixel unit.
-
-        The calibration value is used to compensate the differences between the
-        potentiometers used in the Dynamixel units.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.UP_CALIBRATION, 2)
-        return utils.little_endian_bytes_to_int(byte_seq)
 
 
-    def is_torque_enable(self, dynamixel_id):
-        """Return ``True`` if the torque of the specified Dynamixel unit is
-        enabled; otherwise return ``False``.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.TORQUE_ENABLE, 1)
-        return byte_seq[0] == 1
-
-
-    def is_led_enabled(self, dynamixel_id):
-        """Return ``True`` if the LED of the specified Dynamixel unit is ON;
-        otherwise return ``False``.
-
-        :param int dynamixel_id: the unique ID of a Dynamixel unit. It must be
-            in range (0, 0xFD).
-        """
-        byte_seq = self.read_data(dynamixel_id, pk.LED, 1)
-        return byte_seq[0] == 1
-
+  
 
     def get_cw_compliance_margin(self, dynamixel_id):
         """Return the clockwise compliance margin of the specified Dynamixel
@@ -1479,7 +982,7 @@ class Connection(object):
 
         params = utils.int_to_little_endian_bytes(speed)
 
-        self.write_data(dynamixel_id, pk.MOVING_SPEED, params)
+        self.write_data(dynamixel_id, 0x20, params)
 
 
     def goto(self, dynamixel_id, position, speed=None, degrees=False):
