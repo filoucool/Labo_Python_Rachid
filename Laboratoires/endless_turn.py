@@ -19,8 +19,8 @@ def main():
     serial_connection.set_cw_angle_limit(dynamixel_id2, 0, degrees=False)
     serial_connection.set_ccw_angle_limit(dynamixel_id2, 0, degrees=False)
     while 1:
-        serial_connection.set_speed(dynamixel_id1, 500)
-        serial_connection.set_speed(dynamixel_id2, 500)
+        serial_connection.set_speed(dynamixel_id1, 200)
+        serial_connection.set_speed(dynamixel_id2, 200)
         time.sleep(1)
 
         serial_connection.set_speed(dynamixel_id1, 0)

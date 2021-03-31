@@ -1,11 +1,3 @@
-'''
-Based on Jesse Merritt's script:
-https://github.com/jes1510/python_dynamixels
-
-and Josue Alejandro Savage's Arduino library:
-http://savageelectronics.blogspot.it/2011/01/arduino-y-dynamixel-ax-12.html
-'''
-
 from time import sleep
 from serial import Serial
 import RPi.GPIO as GPIO
@@ -181,7 +173,7 @@ class Ax12:
             error = ord(reply[4])
 
             if(error != 0):
-                print "Error from servo: " + Ax12.dictErrors[error] + ' (code  ' + hex(error) + ')'
+                print ("Error from servo: " + Ax12.dictErrors[error] + ' (code  ' + hex(error) + ')')
                 return -error
             # just reading error bit
             elif(length == 0):
@@ -194,7 +186,7 @@ class Ax12:
                     reply = Ax12.port.read(1)
                     returnValue = ord(reply[0])
                 return returnValue
-        except Exception, detail:
+        except detail:
             raise Ax12.axError(detail)
 
     def ping(self,id):
@@ -226,7 +218,7 @@ class Ax12:
             sleep(Ax12.TX_DELAY_TIME)
             return self.readData(id)
         else:
-            print "nothing done, please send confirm = True as this fuction reset to the factory default value, i.e reset the motor ID"
+            print ("nothing done, please send confirm = True as this fuction reset to the factory default value, i.e reset the motor ID")
             return
 
     def setID(self, id, newId):
@@ -694,48 +686,10 @@ class Ax12:
             try :
                 temp = self.ping(i)
                 servoList.append(i)
-                if verbose: print "Found servo #" + str(i)
+                if verbose: print ("Found servo #" + str(i))
                 time.sleep(0.1)
 
-            except Exception, detail:
-                if verbose : print "Error pinging servo #" + str(i) + ': ' + str(detail)
+            except detail:
+                if verbose : print ("Error pinging servo #" + str(i) + ': ' + str(detail))
                 pass
         return servoList
-
-#
-#def playPose() :
-#    '''
-#    Open a file and move the servos to specified positions in a group move
-#    '''
-#    infile=open(Arguments.playpose, 'r')    # Open the file
-#    poseDict = {}                           # Dictionary to hold poses and positions
-#    if Arguments.verbose : print "Reading pose from", Arguments.playpose
-#    for line in infile.readlines() :        # Read the file and step through it
-#        servo = int(line.split(':')[0])     # Servo is first
-#        position = int(line.split(':')[1])  # Position is second
-#        poseDict[servo]=position            # add the servo to the Dictionary
-#
-#    groupMove2(poseDict)
-#
-#
-#
-#def writePose() :
-#    '''
-#    Read the servos and save the positions to a file
-#    '''
-#    of = open(Arguments.savepose, 'w')      # open the output file
-#    pose = getPose2(connectedServos)        # get the positions
-#    if Arguments.verbose :
-#        print "Servo Positions"
-#        print "---------------"
-#
-#    for key in  pose.keys():                # step through the keys, writing to the file
-#        if Arguments.verbose : print "Servo " + str(key), pose[key]
-#        of.write(str(key) + ':' + str(pose[key]) + '\n')    # Write to the file
-#
-#    if Arguments.verbose :
-#        print "Wrote pose to " + Arguments.savepose
-#        print
-#
-#    of.close()      # close the file
-#

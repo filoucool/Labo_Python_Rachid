@@ -1,3 +1,7 @@
+from time import sleep
+from serial import Serial
+import RPi.GPIO as GPIO
+
 AX_MODEL_NUMBER_L = 0
 AX_MODEL_NUMBER_H = 1
 AX_VERSION = 2
@@ -179,7 +183,7 @@ def readData(self,id):
                 reply = Ax12.port.read(1)
                 returnValue = ord(reply[0])
             return returnValue
-    except Exception, detail:
+    except detail:
         raise Ax12.axError(detail)
 
 def ping(self,id):
@@ -313,7 +317,7 @@ def move(self, id, position):
     sleep(Ax12.TX_DELAY_TIME)
     return self.readData(id)
 
-def moveSpeed(self, id, position, speed):
+def TEST(self, id, position, speed):
     self.direction(Ax12.RPI_DIRECTION_TX)
     Ax12.port.flushInput()
     p = [position&0xff, position>>8]
@@ -682,7 +686,7 @@ def learnServos(self,minValue=1, maxValue=6, verbose=False) :
             if verbose: print ("Found servo #" + str(i))
             time.sleep(0.1)
 
-        except Exception, detail:
+        except detail:
             if verbose : print ("Error pinging servo #" + str(i) + ': ' + str(detail))
             pass
     return servoList
