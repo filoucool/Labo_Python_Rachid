@@ -21,9 +21,10 @@ def main():
 
 
 #     serial_connection.set_speed(dynamixel_id1, 0)
-#     serial_connection.set_speed(dynamixel_id2, 0)
-#     serial_connection.set_ccw_angle_limit(dynamixel_id2, 1023, degrees=False)
-#     serial_connection.set_ccw_angle_limit(dynamixel_id2, 1023, degrees=False)
+    serial_connection.set_ccw_angle_limit(dynamixel_id2, 1023, degrees=False)
+    serial_connection.set_ccw_angle_limit(dynamixel_id2, 1023, degrees=False)
+    serial_connection.set_speed(dynamixel_id2, 200)
+
     gpio.cleanup()
     serial_connection.close()
 

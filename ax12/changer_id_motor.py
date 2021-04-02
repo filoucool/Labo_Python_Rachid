@@ -1,6 +1,7 @@
 from time import sleep
 from serial import Serial
 import RPi.GPIO as GPIO
+import time
 
 class Ax12:
     # important AX-12 constants
@@ -319,27 +320,27 @@ class Ax12:
         Ax12.port.write(outData)
         sleep(Ax12.TX_DELAY_TIME)
         return self.readData(id)
-
-    def moveSpeed(self, id, position, speed):
+    
+    def Speed(self, id, speed):
         self.direction(Ax12.RPI_DIRECTION_TX)
         Ax12.port.flushInput()
-        p = [position&0xff, position>>8]
         s = [speed&0xff, speed>>8]
-        checksum = (~(id + Ax12.AX_GOAL_SP_LENGTH + Ax12.AX_WRITE_DATA + Ax12.AX_GOAL_POSITION_L + p[0] + p[1] + s[0] + s[1]))&0xff
-        outData = bytes(Ax12.AX_START)
-        outData += bytes(Ax12.AX_START)
-        outData += bytes(id)
-        outData += bytes(Ax12.AX_GOAL_SP_LENGTH)
-        outData += bytes(Ax12.AX_WRITE_DATA)
-        outData += bytes(Ax12.AX_GOAL_POSITION_L)
-        outData += bytes(p[0])
-        outData += bytes(p[1])
-        outData += bytes(s[0])
-        outData += bytes(s[1])
-        outData += bytes(checksum)
+        checksum = (~(id + Ax12.AX_GOAL_LENGTH + Ax12.AX_WRITE_DATA + Ax12.AX_GOAL_SPEED_L + s[0] + s[1]))&0xff
+        outData = chr(Ax12.AX_START)
+        outData += chr(Ax12.AX_START)
+        outData += chr(id)
+        outData += chr(Ax12.AX_GOAL_LENGTH)
+        outData += chr(Ax12.AX_WRITE_DATA)
+        outData += chr(Ax12.AX_GOAL_SPEED_L)
+        outData += chr(s[0])
+        outData += chr(s[1])
+        outData += chr(checksum)
         Ax12.port.write(outData)
         sleep(Ax12.TX_DELAY_TIME)
+        self.direction(Ax12.RPI_DIRECTION_RX)
+        sleep(Ax12.TX_DELAY_TIME)
         return self.readData(id)
+
 
     def moveRW(self, id, position):
         self.direction(Ax12.RPI_DIRECTION_TX)
@@ -693,3 +694,16 @@ class Ax12:
                 if verbose : print ("Error pinging servo #" + str(i) + ': ' + str(detail))
                 pass
         return servoList
+
+
+ax12_o = Ax12()
+ax12_o.__init__()
+
+
+dynamixel_id1 = 17
+dynamixel_id2 = 18
+ax12_o.setID(1, 17)
+
+
+
+
