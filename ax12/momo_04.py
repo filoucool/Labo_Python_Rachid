@@ -116,7 +116,7 @@ class Ax12:
     LEFT = 0
     RIGTH = 1
     RX_TIME_OUT = 10
-    TX_DELAY_TIME = 0.00002
+    TX_DELAY_TIME = 0.001
 
     # RPi constants
     RPI_DIRECTION_PIN = 18
@@ -130,7 +130,7 @@ class Ax12:
 
     def __init__(self):
         if(Ax12.port == None):
-            Ax12.port = Serial("/dev/ttyS0", baudrate=1000000, timeout=0.001)
+            Ax12.port = Serial("/dev/ttyS0", baudrate=115200, timeout=0.01)
         if(not Ax12.gpioSet):
             GPIO.setwarnings(False)
             GPIO.setmode(GPIO.BCM)
@@ -356,6 +356,27 @@ class Ax12:
         outData += chr(p[0])
         outData += chr(p[1])
         outData += chr(checksum)
+        Ax12.port.write(outData)
+        sleep(Ax12.TX_DELAY_TIME)
+        return self.readData(id)
+
+    def moveSpeed(self, id, position, speed):
+        self.direction(Ax12.RPI_DIRECTION_TX)
+        Ax12.port.flushInput()
+        p = [position&0xff, position>>8]
+        s = [speed&0xff, speed>>8]
+        checksum = (~(id + Ax12.AX_GOAL_SP_LENGTH + Ax12.AX_WRITE_DATA + Ax12.AX_GOAL_POSITION_L + p[0] + p[1] + s[0] + s[1]))&0xff
+        outData = bytes(Ax12.AX_START)
+        outData += bytes(Ax12.AX_START)
+        outData += bytes(id)
+        outData += bytes(Ax12.AX_GOAL_SP_LENGTH)
+        outData += bytes(Ax12.AX_WRITE_DATA)
+        outData += bytes(Ax12.AX_GOAL_POSITION_L)
+        outData += bytes(p[0])
+        outData += bytes(p[1])
+        outData += bytes(s[0])
+        outData += bytes(s[1])
+        outData += bytes(checksum)
         Ax12.port.write(outData)
         sleep(Ax12.TX_DELAY_TIME)
         return self.readData(id)
@@ -695,14 +716,72 @@ class Ax12:
                 pass
         return servoList
 
-
+delay_0=0.001
 ax12_o = Ax12()
 ax12_o.__init__()
+time.sleep(1)
 
 
 dynamixel_id1 = 17
-ax12_o.setID(1, dynamixel_id1)
+dynamixel_id2 = 18
+ax12_o.ping(dynamixel_id1)
+time.sleep(delay_0)
+ax12_o.ping(dynamixel_id2)
+time.sleep(delay_0)
 
 
+ax12_o.setAngleLimit(dynamixel_id1, 0, 0)
+time.sleep(delay_0)
+ax12_o.setAngleLimit(dynamixel_id2, 0, 0)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 0)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 0)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 500)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 1024+500)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 0)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 1024+500)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 500)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 1024+0)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 0)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 0)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 500)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 1024+500)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 0)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 1024+500)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 500)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 1024+0)
+time.sleep(1)
+
+ax12_o.Speed(dynamixel_id1, 0)
+time.sleep(delay_0)
+ax12_o.Speed(dynamixel_id2, 0)
+time.sleep(0.5)
+
+time.sleep(1)
+
+ax12_o.direction(Ax12.RPI_DIRECTION_TX)
 
 

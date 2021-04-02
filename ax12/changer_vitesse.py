@@ -360,6 +360,27 @@ class Ax12:
         sleep(Ax12.TX_DELAY_TIME)
         return self.readData(id)
 
+    def moveSpeed(self, id, position, speed):
+        self.direction(Ax12.RPI_DIRECTION_TX)
+        Ax12.port.flushInput()
+        p = [position&0xff, position>>8]
+        s = [speed&0xff, speed>>8]
+        checksum = (~(id + Ax12.AX_GOAL_SP_LENGTH + Ax12.AX_WRITE_DATA + Ax12.AX_GOAL_POSITION_L + p[0] + p[1] + s[0] + s[1]))&0xff
+        outData = bytes(Ax12.AX_START)
+        outData += bytes(Ax12.AX_START)
+        outData += bytes(id)
+        outData += bytes(Ax12.AX_GOAL_SP_LENGTH)
+        outData += bytes(Ax12.AX_WRITE_DATA)
+        outData += bytes(Ax12.AX_GOAL_POSITION_L)
+        outData += bytes(p[0])
+        outData += bytes(p[1])
+        outData += bytes(s[0])
+        outData += bytes(s[1])
+        outData += bytes(checksum)
+        Ax12.port.write(outData)
+        sleep(Ax12.TX_DELAY_TIME)
+        return self.readData(id)
+
     def moveSpeedRW(self, id, position, speed):
         self.direction(Ax12.RPI_DIRECTION_TX)
         Ax12.port.flushInput()
@@ -700,9 +721,6 @@ ax12_o = Ax12()
 ax12_o.__init__()
 
 
-dynamixel_id1 = 17
-ax12_o.setID(1, dynamixel_id1)
-
-
-
+dynamixel_id1 = 18
+ax12_o.setBaudRate(dynamixel_id1,115200)
 
