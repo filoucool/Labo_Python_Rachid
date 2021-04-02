@@ -737,24 +737,18 @@ time.sleep(1)
 
 
 i=0
-
-while i<850:
-    i = i+20
+while i<800:
+    i = i+8
     ax12_o.Speed(dynamixel_id1, i)
     time.sleep(delay_0)
     ax12_o.Speed(dynamixel_id2, 1024+i)
     time.sleep(0.1)
 
-# while i>10:
-#     i = i-20
-#     ax12_o.Speed(dynamixel_id1, i)
-#     time.sleep(delay_0)
-#     ax12_o.Speed(dynamixel_id2, 1024+i)
-#     time.sleep(0.1)
-    
-    ax12_o.Speed(dynamixel_id1, 0)
+while i>10:
+    i = i-8
+    ax12_o.Speed(dynamixel_id1, i)
     time.sleep(delay_0)
-    ax12_o.Speed(dynamixel_id2, 1024+0)
+    ax12_o.Speed(dynamixel_id2, 1024+i)
     time.sleep(0.1)
     
 time.sleep(1)
