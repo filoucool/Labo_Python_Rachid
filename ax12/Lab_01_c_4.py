@@ -3,7 +3,6 @@ from serial import Serial
 import RPi.GPIO as GPIO
 import time
 
-
 delay_0=0.001
 ax12_Lib = Ax12()
 ax12_Lib.__init__()
